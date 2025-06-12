@@ -1,0 +1,43 @@
+# .github/workflows/pr-generator.yml
+name: Auto PR for Algorithm File
+
+on:
+  push:
+    branches:
+      - "algorithm/**"
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Extract file info and create PR
+        run: |
+          FILE=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.java$' | head -n 1)
+          echo "Detected file: $FILE"
+
+          if echo "$FILE" | grep -q 'BOJ[0-9]*'; then
+            SITE="BOJ"
+            PROBLEM_ID=$(echo $FILE | grep -o 'BOJ[0-9]*' | sed 's/BOJ//')
+            PROBLEM_URL="https://www.acmicpc.net/problem/$PROBLEM_ID"
+          elif echo "$FILE" | grep -q 'PROG[0-9]*'; then
+            SITE="PROG"
+            PROBLEM_ID=$(echo $FILE | grep -o 'PROG[0-9]*' | sed 's/PROG//')
+            PROBLEM_URL="https://school.programmers.co.kr/learn/courses/30/lessons/$PROBLEM_ID"
+          else
+            echo "Unknown problem type. Only BOJ and PROG are supported."
+            exit 1
+          fi
+
+          TITLE=$(echo $FILE | sed -E 's/.*(BOJ|PROG)[0-9]+_//;s/.java//;s/_/ /g')
+
+          PR_TITLE="🔀 Add $SITE $PROBLEM_ID - $TITLE"
+          PR_BODY="📌 [$SITE 문제 링크]($PROBLEM_URL)"
+
+          echo "Creating PR: $PR_TITLE"
+          gh pr create --title "$PR_TITLE" --body "$PR_BODY" --head ${{ github.ref_name }} --base main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
