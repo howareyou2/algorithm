@@ -1,0 +1,58 @@
+name: Auto Commit
+
+on:
+  push:
+    branches:
+      - "algorithm/**"
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+
+      - name: Find modified Java file
+        id: java_file
+        run: |
+          FILE=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.java$' | head -n 1)
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+
+      - name: Extract info, compile, run, and commit
+        run: |
+          FILE=${{ steps.java_file.outputs.file }}
+          echo "Java File: $FILE"
+
+          DIR=$(dirname "$FILE" | sed 's|algorithm/||')
+          BASENAME=$(basename "$FILE" .java)
+
+          ID=$(echo $BASENAME | grep -o 'BOJ[0-9]*' | sed 's/BOJ//')
+          TITLE=$(echo $BASENAME | sed -E 's/.*BOJ[0-9]+_//;s/_/ /g')
+
+          # 라인 수 계산
+          LINES=$(wc -l < "$FILE")
+
+          # 파일 컴파일
+          javac "$FILE"
+          CLASSNAME=$(basename "$FILE" .java)
+          OUT=$(java -cp $(dirname "$FILE") "$CLASSNAME")
+
+          # 실행 시간 추출
+          TIME_LINE=$(echo "$OUT" | grep 'TIME:')
+          TIME_VAL=$(echo "$TIME_LINE" | grep -o '[0-9]* ms')
+
+          # 커밋 메시지
+          MSG="✨ $DIR: BOJ$ID $TITLE\n📏 ${LINES} lines\n⏱️ $TIME_VAL"
+          echo -e "$MSG"
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add "$FILE"
+          git commit -m "$MSG"
+          git push
