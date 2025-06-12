@@ -21,5 +21,6 @@ public class Main {
 
 		long end = System.currentTimeMillis();
 		System.out.println("TIME: " + (end - start) + " ms");
+		
 	}
 }
