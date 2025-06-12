@@ -4,7 +4,6 @@ import java.util.*;
 public class Main {	
 	public static void main(String[] args) throws IOException {
 		long start = System.currentTimeMillis();
-
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));		
 		StringBuilder sb = new StringBuilder();
 		int T = Integer.parseInt(br.readLine());
@@ -18,7 +17,6 @@ public class Main {
 			sb.append(N-1).append("\n");
 		}
 		System.out.println(sb);
-
 		long end = System.currentTimeMillis();
 		System.out.println("TIME: " + (end - start) + " ms");
 	}
