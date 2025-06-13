@@ -1,4 +1,4 @@
-name: Auto Commit
+name: auto-commit
 
 on:
   push:
@@ -10,48 +10,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
 
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
-          distribution: "temurin"
-          java-version: "17"
+          distribution: temurin
+          java-version: 17
 
-      - name: Find modified Java file
-        id: java_file
+      - name: Find changed Java file
+        id: find_file
         run: |
-          git fetch origin
-          FILE=$(git diff origin/HEAD --name-only | grep '\.java$' | head -n 1 || echo "")
+          FILE=$(git log -1 --name-only | grep '\.java$' | head -n 1 || echo "")
+          echo "Java File: $FILE"
           echo "file=$FILE" >> $GITHUB_OUTPUT
 
-      - name: Extract info, compile, run, and commit
+      - name: Compile and Run Java (if file exists)
+        if: steps.find_file.outputs.file != ''
         run: |
-          FILE=${{ steps.java_file.outputs.file }}
-          echo "Java File: $FILE"
+          FILE="${{ steps.find_file.outputs.file }}"
+          echo "Processing Java file: $FILE"
 
-          if [ -z "$FILE" ]; then
-            echo "No Java file to process."
-            exit 0
-          fi
-
-          DIR=$(dirname "$FILE" | sed 's|algorithm/||')
+          DIR=$(dirname "$FILE")
           BASENAME=$(basename "$FILE" .java)
 
           ID=$(echo $BASENAME | grep -o 'BOJ[0-9]*' | sed 's/BOJ//')
           TITLE=$(echo $BASENAME | sed -E 's/.*BOJ[0-9]+_//;s/_/ /g')
-
           LINES=$(wc -l < "$FILE")
 
           javac "$FILE"
           CLASSNAME=$(basename "$FILE" .java)
-          OUT=$(java -cp $(dirname "$FILE") "$CLASSNAME")
+          OUT=$(java -cp "$DIR" "$CLASSNAME")
 
           TIME_LINE=$(echo "$OUT" | grep 'TIME:')
           TIME_VAL=$(echo "$TIME_LINE" | grep -o '[0-9]* ms')
 
-          MSG="✨ $DIR: BOJ$ID $TITLE\n📏 ${LINES} lines\n⏱️ $TIME_VAL"
+          MSG="✨ ${DIR}: BOJ${ID} ${TITLE}\n📏 ${LINES} lines\n⏱️ ${TIME_VAL}"
           echo -e "$MSG"
 
           git config user.name github-actions
