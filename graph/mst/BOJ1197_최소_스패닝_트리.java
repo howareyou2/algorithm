@@ -22,6 +22,7 @@ public class Main {
     static List<Edge> edges;
 
     public static void main(String[] args) throws IOException {
+        long start = System.currentTimeMillis();
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringTokenizer st = new StringTokenizer(br.readLine());
 
@@ -56,6 +57,8 @@ public class Main {
         }
 
         System.out.println(mstWeight);
+        long end = System.currentTimeMillis();
+        System.out.println("TIME: " + (end - start) + " ms");
     }
 
     static int find(int x) {
